@@ -165,9 +165,6 @@ public class WordMultiset extends AbstractMap<String, Integer> {
 		return true;
 	}
 
-	private WordMultiset(boolean unused) {
-	} // do not modify, used by Spy
-
 	/**
 	 * Creates an empty multiset
 	 */
@@ -384,8 +381,6 @@ public class WordMultiset extends AbstractMap<String, Integer> {
 			assert wellFormed() : "invariant broken in iterator";
 			return new EntrySetIterator();
 		}
-
-		// TODO: efficiency override. (Wait until doing efficiency testing)
 	}
 
 	private class EntrySetIterator implements Iterator<Map.Entry<String, Integer>> {
@@ -484,113 +479,6 @@ public class WordMultiset extends AbstractMap<String, Integer> {
 			index = nextSpot(index);
 			colVersion = version;
 			assert wellFormed() : "invariant broken by remove";
-		}
-	}
-
-	/**
-	 * Used for testing the invariant. Do not change this code.
-	 */
-	public static class Spy {
-		private static class SpyEntry extends MyEntry {
-			final Map.Entry<String, Integer> source;
-
-			SpyEntry(String k, Integer v, Map.Entry<String, Integer> src) {
-				super(k, v);
-				source = src;
-			}
-		}
-
-		/**
-		 * Return the sink for invariant error messages
-		 * 
-		 * @return current reporter
-		 */
-		public Consumer<String> getReporter() {
-			return reporter;
-		}
-
-		/**
-		 * Change the sink for invariant error messages.
-		 * 
-		 * @param r where to send invariant error messages.
-		 */
-		public void setReporter(Consumer<String> r) {
-			reporter = r;
-		}
-
-		/**
-		 * Create a debugging instance of the ADT with a particular data structure.
-		 * 
-		 * @param a array of entries, used to create the data table
-		 * @param p place holder used
-		 * @param m num entries
-		 * @param u num used
-		 * @param v version
-		 * @return a new instance of a BallSeq with the given data structure
-		 */
-		public WordMultiset newInstance(Map.Entry<String, Integer>[] a, Object p, int m, int u, int v) {
-			WordMultiset result = new WordMultiset(false);
-			result.data = null;
-			if (a != null) {
-				result.data = new MyEntry[a.length];
-				for (int i = 0; i < a.length; ++i) {
-					if (a[i] == p) {
-						result.data[i] = PLACE_HOLDER;
-					} else if (a[i] != null) {
-						result.data[i] = new SpyEntry(a[i].getKey(), a[i].getValue(), a[i]);
-					}
-				}
-			}
-			result.numEntries = m;
-			result.numUsed = u;
-			result.version = v;
-			return result;
-		}
-
-		/**
-		 * Run the hash method in the debugging instance
-		 * 
-		 * @param wm   debugging instance
-		 * @param s    string to check, must not be null
-		 * @param okPH whether a placeholder is acceptable
-		 * @return index
-		 */
-		public int hash(WordMultiset wm, String s, boolean okPH) {
-			return wm.hash(s, okPH);
-		}
-
-		/**
-		 * Return whether debugging instance meets the requirements on the invariant.
-		 * 
-		 * @param wm instance of to use, must not be null
-		 * @return whether it passes the check
-		 */
-		public boolean wellFormed(WordMultiset wm) {
-			return wm.wellFormed();
-		}
-
-		public Map.Entry<String, Integer>[] rehash(Map.Entry<String, Integer>[] a, Map.Entry<String, Integer> p, int m,
-				int u) {
-			WordMultiset wm = this.newInstance(a, p, m, u, 42);
-			wm.rehash();
-			if (wm.data == null)
-				return null;
-			@SuppressWarnings("unchecked")
-			Map.Entry<String, Integer>[] result = (Map.Entry<String, Integer>[]) new Map.Entry<?, ?>[wm.data.length];
-			for (int i = 0; i < result.length; ++i) {
-				if (wm.data[i] == null)
-					continue;
-				if (wm.data[i] == PLACE_HOLDER)
-					result[i] = p;
-				else if (wm.data[i] instanceof SpyEntry) {
-					SpyEntry se = (SpyEntry) wm.data[i];
-					result[i] = se.source;
-					assert wm.data[i].string == se.source.getKey() : "rehash should not change the keys of any node!";
-					assert wm.data[i].count == se.source.getValue() : "rehash should not change the count of any node!";
-				} else
-					result[i] = wm.data[i];
-			}
-			return result;
 		}
 	}
 }
